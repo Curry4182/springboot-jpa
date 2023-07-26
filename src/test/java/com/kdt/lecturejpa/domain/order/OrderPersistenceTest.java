@@ -5,6 +5,10 @@ import static com.kdt.lecturejpa.domain.order.OrderStatus.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import javax.sound.midi.MetaMessage;
+
+import org.aspectj.weaver.ast.Or;
+import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -71,5 +75,37 @@ public class OrderPersistenceTest {
 		Member orderMemberEntity = entityManager.find(Member.class, orderEntity.getMemberId());
 		// orderEntity.getMember() // 객체중심 설계라면 객체그래프 탐색을 해야하지 않을까?
 		log.info("nick : {}", orderMemberEntity.getNickName());
+	}
+
+	@Test
+	void 연관관계_테스트() {
+		EntityManager entityManager = emf.createEntityManager();
+		EntityTransaction transaction = entityManager.getTransaction();
+
+		transaction.begin();
+
+		Member member = new Member();
+		member.setName("byeonggon");
+		member.setNickName("guppy.kang");
+		member.setAddress("서울시 관악구");
+		member.setAge(33);
+
+		entityManager.persist(member);
+
+		Order order = new Order();
+		order.setUuid(UUID.randomUUID().toString());
+		order.setOrderStatus(OPENED);
+		order.setOrderDateTime(LocalDateTime.now());
+		order.setMemo("부재시 연락주세요.");
+		order.setMember(member);
+		//member.setOrders(Lists.newArrayList(order)); //이 코드가 없어도 setMember를 수정해서 양방향으로 업데이트 되
+
+		entityManager.persist(order);
+		transaction.commit();
+		Order entity = entityManager.find(Order.class, order.getUuid());
+
+		log.info("{}", entity.getMember().getNickName()); // 객체 탐색 그래프
+		log.info("{}", entity.getMember().getOrders().size());
+		log.info("{}", order.getMember().getOrders().size());
 	}
 }
